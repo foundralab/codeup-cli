@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/foundralab/codeup-cli/cmd"
+	"github.com/foundralab/codeup-cli/internal/cli"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	if err := cli.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "错误:", err)
 		os.Exit(1)
 	}

@@ -4,7 +4,22 @@
 
 ## 安装
 
-### 使用发布包（推荐，无需 Go 环境）
+### Homebrew（macOS / Linux，推荐）
+
+```bash
+brew tap foundralab/tap
+brew install codeup
+```
+
+### go install（需 Go 1.24+）
+
+```bash
+go install github.com/foundralab/codeup-cli/cmd/codeup@latest
+```
+
+安装后命令名为 `codeup`（确保 `$GOPATH/bin` 在 PATH 中）。
+
+### 使用发布包（Windows 或无 Go 环境）
 
 从发布包中取对应平台的压缩包解压即可：
 
@@ -34,17 +49,11 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 
 重开终端后运行 `codeup --help` 验证。
 
-### 从源码安装（需 Go 1.24+）
+### 从源码构建
 
 ```bash
-go build -o codeup .
-# 或安装到 $GOPATH/bin
-go install .
-```
-
-### 构建发布包
-
-```bash
+make build     # 编译 ./codeup
+make install   # 安装到 $GOPATH/bin
 make release   # 在 dist/ 下生成 mac/Windows/Linux 各平台压缩包
 ```
 
@@ -97,9 +106,9 @@ codeup mr create --repo 2813489 -s feat/login --target master -t "支持登录" 
 ## 项目结构
 
 ```
-main.go                    入口
-cmd/                       命令定义（cobra）
-  root.go                  根命令、全局参数、配置装配
+cmd/codeup/main.go         入口（go install 的目标，命令名 codeup）
+internal/cli/              命令定义（cobra）
+  root.go                  根命令、全局参数、版本号、配置装配
   config.go                codeup config set/get
   mr.go                    codeup mr create
 internal/config/           配置文件 + 环境变量加载

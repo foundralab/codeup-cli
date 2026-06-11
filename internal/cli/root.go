@@ -1,14 +1,18 @@
-// Package cmd 定义 codeup CLI 的命令树。
-package cmd
+// Package cli 定义 codeup CLI 的命令树。
+package cli
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 
 	"github.com/foundralab/codeup-cli/internal/api"
 	"github.com/foundralab/codeup-cli/internal/config"
 )
+
+// version 由构建时 ldflags 注入：-X github.com/foundralab/codeup-cli/internal/cli.version=x.y.z
+var version = "dev"
 
 // 全局参数，可覆盖配置文件与环境变量。
 var (
@@ -29,11 +33,20 @@ var rootCmd = &cobra.Command{
   codeup config set token pt-xxxx
   codeup config set org-id 60d54f3daccf2bbd6659f3ad   # 仅中心版需要
   codeup mr create --repo 2813489 --source feat/demo --target master --title "my mr"`,
+	Version:       version,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
 
 func init() {
+	// ldflags 未注入版本时（如 go install），回退到模块构建信息里的版本号。
+	if version == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			version = info.Main.Version
+		}
+	}
+	rootCmd.Version = version
+
 	rootCmd.PersistentFlags().StringVar(&flagDomain, "domain", "", "云效服务接入点（如 openapi-rdc.aliyuncs.com）")
 	rootCmd.PersistentFlags().StringVar(&flagToken, "token", "", "个人访问令牌")
 	rootCmd.PersistentFlags().StringVar(&flagOrgID, "org-id", "", "组织 ID（仅中心版需要，Region 版留空）")
