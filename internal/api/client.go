@@ -1,0 +1,110 @@
+// Package api 封装阿里云云效 Codeup OpenAPI 的 HTTP 客户端。
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+// Client 是云效 OpenAPI 客户端。
+type Client struct {
+	// Domain 服务接入点，如 openapi-rdc.aliyuncs.com。
+	Domain string
+	// Token 个人访问令牌。
+	Token string
+	// OrganizationID 组织 ID。非空时按中心版路径调用，否则按 Region 版。
+	OrganizationID string
+
+	httpClient *http.Client
+}
+
+// NewClient 创建客户端。
+func NewClient(domain, token, organizationID string) *Client {
+	return &Client{
+		Domain:         strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(domain, "https://"), "http://"), "/"),
+		Token:          token,
+		OrganizationID: organizationID,
+		httpClient:     &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+// APIError 表示服务端返回的非 2xx 响应。
+type APIError struct {
+	StatusCode int
+	Code       string `json:"errorCode"`
+	Message    string `json:"errorMessage"`
+	RequestID  string `json:"requestId"`
+	Raw        string
+}
+
+func (e *APIError) Error() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "API 请求失败 (HTTP %d)", e.StatusCode)
+	if e.Code != "" {
+		fmt.Fprintf(&b, " [%s]", e.Code)
+	}
+	if e.Message != "" {
+		fmt.Fprintf(&b, ": %s", e.Message)
+	} else if e.Raw != "" {
+		fmt.Fprintf(&b, ": %s", e.Raw)
+	}
+	if e.RequestID != "" {
+		fmt.Fprintf(&b, " (requestId: %s)", e.RequestID)
+	}
+	return b.String()
+}
+
+// codeupBasePath 返回 codeup 资源的基础路径，按是否配置组织 ID 区分中心版/Region 版。
+func (c *Client) codeupBasePath() string {
+	if c.OrganizationID != "" {
+		return fmt.Sprintf("/oapi/v1/codeup/organizations/%s", url.PathEscape(c.OrganizationID))
+	}
+	return "/oapi/v1/codeup"
+}
+
+// post 发起 POST 请求，body 与 result 均为 JSON 编解码的结构体指针。
+func (c *Client) post(ctx context.Context, path string, body, result any) error {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("序列化请求体失败: %w", err)
+	}
+
+	u := "https://" + c.Domain + path
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-yunxiao-token", c.Token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("请求 %s 失败: %w", u, err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		apiErr := &APIError{StatusCode: resp.StatusCode, Raw: strings.TrimSpace(string(respBody))}
+		_ = json.Unmarshal(respBody, apiErr)
+		return apiErr
+	}
+
+	if result != nil {
+		if err := json.Unmarshal(respBody, result); err != nil {
+			return fmt.Errorf("解析响应失败: %w\n原始响应: %s", err, respBody)
+		}
+	}
+	return nil
+}
