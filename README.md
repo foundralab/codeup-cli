@@ -4,12 +4,14 @@
 
 ## 安装
 
-### Homebrew（macOS / Linux，推荐）
+### Homebrew（macOS，推荐）
 
 ```bash
 brew tap foundralab/tap
-brew install codeup
+brew install --cask codeup
 ```
+
+安装的是 GitHub Release 上的预编译二进制，无需本地 Go 环境。
 
 ### go install（需 Go 1.24+）
 
