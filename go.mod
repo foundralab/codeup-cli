@@ -1,4 +1,4 @@
-module github.com/hellodeveye/codeup-cli
+module github.com/foundralab/codeup-cli
 
 go 1.24.2
 

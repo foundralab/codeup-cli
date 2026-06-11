@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/hellodeveye/codeup-cli/internal/api"
-	"github.com/hellodeveye/codeup-cli/internal/config"
+	"github.com/foundralab/codeup-cli/internal/api"
+	"github.com/foundralab/codeup-cli/internal/config"
 )
 
 // 全局参数，可覆盖配置文件与环境变量。

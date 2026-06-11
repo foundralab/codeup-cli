@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/hellodeveye/codeup-cli/internal/api"
+	"github.com/foundralab/codeup-cli/internal/api"
 )
 
 var mrCmd = &cobra.Command{

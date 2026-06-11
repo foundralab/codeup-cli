@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hellodeveye/codeup-cli/cmd"
+	"github.com/foundralab/codeup-cli/cmd"
 )
 
 func main() {
