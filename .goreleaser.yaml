@@ -1,0 +1,67 @@
+version: 2
+
+project_name: codeup
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: codeup
+    main: ./cmd/codeup
+    binary: codeup
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/foundralab/codeup-cli/internal/cli.version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+# 自动更新 foundralab/homebrew-tap 的 cask（分发预编译二进制，安装无需 Go）。
+# 需要在 codeup-cli 仓库配置 HOMEBREW_TAP_TOKEN secret（对 homebrew-tap 有写权限的 PAT）。
+homebrew_casks:
+  - name: codeup
+    repository:
+      owner: foundralab
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/foundralab/codeup-cli
+    description: "CLI for Aliyun Yunxiao Codeup (create merge requests, etc.)"
+    commit_author:
+      name: goreleaser-bot
+      email: foundralab@gmail.com
+    commit_msg_template: "chore: 更新 {{ .ProjectName }} cask 至 {{ .Tag }}"
+    # 二进制未做 Apple 签名/公证，安装后移除隔离属性，避免 Gatekeeper 拦截。
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/codeup"]
+          end
