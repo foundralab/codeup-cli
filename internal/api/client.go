@@ -69,19 +69,27 @@ func (c *Client) codeupBasePath() string {
 	return "/oapi/v1/codeup"
 }
 
-// post 发起 POST 请求，body 与 result 均为 JSON 编解码的结构体指针。
-func (c *Client) post(ctx context.Context, path string, body, result any) error {
-	payload, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("序列化请求体失败: %w", err)
+// do 是通用 HTTP 请求方法。body 为 nil 时不发送请求体（用于 GET）。
+func (c *Client) do(ctx context.Context, method, path string, body, result any) error {
+	var reqBody *bytes.Reader
+	if body != nil {
+		payload, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("序列化请求体失败: %w", err)
+		}
+		reqBody = bytes.NewReader(payload)
+	} else {
+		reqBody = bytes.NewReader(nil)
 	}
 
 	u := "https://" + c.Domain + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, method, u, reqBody)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("x-yunxiao-token", c.Token)
 
 	resp, err := c.httpClient.Do(req)
@@ -107,4 +115,9 @@ func (c *Client) post(ctx context.Context, path string, body, result any) error 
 		}
 	}
 	return nil
+}
+
+// post 发起 POST 请求。
+func (c *Client) post(ctx context.Context, path string, body, result any) error {
+	return c.do(ctx, http.MethodPost, path, body, result)
 }
