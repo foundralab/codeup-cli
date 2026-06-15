@@ -78,8 +78,6 @@ func (c *Client) do(ctx context.Context, method, path string, body, result any) 
 			return fmt.Errorf("序列化请求体失败: %w", err)
 		}
 		reqBody = bytes.NewReader(payload)
-	} else {
-		reqBody = bytes.NewReader(nil)
 	}
 
 	u := "https://" + c.Domain + path
@@ -115,6 +113,11 @@ func (c *Client) do(ctx context.Context, method, path string, body, result any) 
 		}
 	}
 	return nil
+}
+
+// get 发起 GET 请求。
+func (c *Client) get(ctx context.Context, path string, result any) error {
+	return c.do(ctx, http.MethodGet, path, nil, result)
 }
 
 // post 发起 POST 请求。

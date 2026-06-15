@@ -2,9 +2,7 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -15,7 +13,7 @@ import (
 
 var repoCmd = &cobra.Command{
 	Use:     "repo",
-	Aliases: []string{"repository", "project"},
+	Aliases: []string{"repository"},
 	Short:   "管理代码库",
 }
 
@@ -51,7 +49,7 @@ var repoListCmd = &cobra.Command{
 			archived = &f
 		}
 
-		result, err := client.ListRepositories(ctx, api.ListRepositoriesOptions{
+		repos, err := client.ListRepositories(ctx, api.ListRepositoriesOptions{
 			Search:   o.search,
 			Page:     o.page,
 			PerPage:  o.perPage,
@@ -62,19 +60,17 @@ var repoListCmd = &cobra.Command{
 		}
 
 		if o.outputJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(result.Items)
+			return printJSON(repos)
 		}
 
-		if len(result.Items) == 0 {
+		if len(repos) == 0 {
 			fmt.Println("未找到代码库")
 			return nil
 		}
 
 		fmt.Printf("%-10s  %-30s  %-12s  %s\n", "ID", "名称", "可见性", "最后活跃")
 		fmt.Println(strings.Repeat("-", 72))
-		for _, r := range result.Items {
+		for _, r := range repos {
 			activity := r.LastActivityAt
 			if len(activity) > 10 {
 				activity = activity[:10]
@@ -110,9 +106,7 @@ var repoGetCmd = &cobra.Command{
 		}
 
 		if repoGetOpts.outputJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(repo)
+			return printJSON(repo)
 		}
 
 		fmt.Printf("ID:         %d\n", repo.ID)

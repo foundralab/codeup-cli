@@ -2,9 +2,7 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -84,9 +82,7 @@ var mrCreateCmd = &cobra.Command{
 		}
 
 		if o.outputJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(mr)
+			return printJSON(mr)
 		}
 
 		fmt.Printf("✓ 合并请求创建成功 !%d\n", mr.LocalID)
